@@ -1,0 +1,31 @@
+name: Update Scottish Water JSON
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch live feed
+        run: |
+          mkdir -p docs
+          curl -sS \
+            'https://api.scottishwater.co.uk/overflow-event-monitoring/v1/near-real-time' \
+            -o docs/near-real-time.json
+
+      - name: Commit if changed
+        run: |
+          git config user.email "actions@github.com"
+          git config user.name  "github-actions"
+          if [ -n "$(git status --porcelain)" ]; then
+            git add docs/near-real-time.json
+            git commit -m "Auto-update $(date -u +'%FT%TZ')"
+            git push
+          else
+            echo "No changes"
+          fi
